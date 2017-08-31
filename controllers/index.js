@@ -510,7 +510,7 @@ router.post('/deal', function(req, res,next) {
       "Description": reqObj.Description,
       "AddImages":  actualPath + target_path,
       "Location": reqObj.Location,
-      "AddButton" : reqObj.AddButton,
+      "AddButton" : reqObj.AddButton
       
       };
     var TitleReg=req.body.Title;
@@ -696,4 +696,217 @@ try{
   return next(ex);
   }
 });
-		
+
+//special insertion
+
+router.post('/special', function(req, res,next) {
+  try{
+    var reqObj = req.body;        
+    console.log("rrrrrrrr",reqObj);
+    console.log("kkkkkk",req.files);
+    var ext = path.extname(req.files.AddImages.name).toLowerCase();
+     var temp_path = req.files.AddImages.path;
+     console.log("jjjjjj",temp_path);
+     
+      // move the file from the temporary location to the intended location
+      
+    fs.readFile(req.files.AddImages.path, function (err, data) {
+        var target_path = "SpecialUploads/" + req.files.AddImages.originalFilename;
+        console.log(target_path);
+        /// write file to uploads/fullsize folder
+        fs.writeFile(target_path, data, function (err) {
+        
+    req.getConnection(function(err, conn){
+    if(err){  
+      console.error('SQL Connection error: ', err);
+      return next(err);
+    }else{
+    	var actualPath = "http://52.201.14.137:3000/";
+    
+      var insertSql = "INSERT INTO special SET ?";
+      var insertValues = {
+      "Title" : reqObj.Title,
+      "Description": reqObj.Description,
+      "AddImages":  actualPath + target_path,
+      "Location": reqObj.Location,
+      "AddButton" : reqObj.AddButton,
+      "Date": reqObj.Date
+      
+      };
+    var TitleReg=req.body.Title;
+     if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
+          {
+
+          conn.query('SELECT * FROM special WHERE Title = ?',  [TitleReg],function(err,rows){
+           if(err){
+                    return console.log(err);
+                 }
+                if (!rows.length)
+                {
+                   conn.query(insertSql,insertValues,function(err, result){
+                   
+                    var deal_id = "Inserted Successfully";
+                    return res.json({"message":deal_id});
+                    });
+                 }
+              else{
+                    return res.json({"message":"Title is already in use"});
+                 }
+        });
+    }
+    else{
+      console.log('File type must be image',err);
+             res.json({message: 'Only image files are allowed.'});
+      }
+
+    }
+    });
+  });
+    });
+    // });
+}
+catch(ex){
+  console.error("Internal error:"+ex);
+  return next(ex);
+  }
+});
+
+
+/* Get event Service. */
+router.get('/special', function(req, res, next) {
+    try {
+    	
+  		var query = url.parse(req.url,true).query;
+  		console.log(query);
+        var eventTitle = query.eventTitle;
+        var  price= query.price;
+        req.getConnection(function(err, conn) {
+            if (err) {
+                console.error('SQL Connection error: ', err);
+                return next(err);
+            } else {
+            	var getquer= "SELECT * from Special";
+                conn.query(getquer, function(err, result) {
+                    if (err) {
+                        console.error('SQL error: ', err);
+                        return next(err);
+                    }
+                    var resEmp = ["SpecialDetails"];
+                    for (var empIndex in result) {
+                        var empObj = result[empIndex];
+                        resEmp.push(empObj);
+                    }
+                    res.json(resEmp);
+                });
+            }
+        });
+    } catch (ex) {
+        console.error("Internal error:" + ex);
+        return next(ex);
+    }
+});
+
+//job insertion
+router.post('/job', function(req, res,next) {
+  try{
+    var reqObj = req.body;        
+    console.log("rrrrrrrr",reqObj);
+    console.log("kkkkkk",req.files);
+    var ext = path.extname(req.files.AddImages.name).toLowerCase();
+     var temp_path = req.files.AddImages.path;
+     console.log("jjjjjj",temp_path);
+     //ar actualPath = "C:/Users/Prasanthi/Desktop/latest/SampleReactApp";
+     
+      // move the file from the temporary location to the intended location
+      
+    fs.readFile(req.files.AddImages.path, function (err, data) {
+        var target_path = "JobUploads/" + req.files.AddImages.originalFilename;
+        console.log(target_path);
+        /// write file to uploads/fullsize folder
+        fs.writeFile(target_path, data, function (err) {
+        
+    req.getConnection(function(err, conn){
+    if(err){  
+      console.error('SQL Connection error: ', err);
+      return next(err);
+    }else{
+    	var actualPath = "http://52.201.14.137:3000/";
+      //var actualPath = "C:/Users/TCST09/Desktop/SampleReactApp/";
+      var insertSql = "INSERT INTO Job SET ?";
+      var insertValues = {
+      "Title" : reqObj.Title,
+      "Description": reqObj.Description,
+      "AddImages":  actualPath + target_path,
+      "Location": reqObj.Location,
+      "AddButton" : reqObj.AddButton
+      
+      };
+    var TitleReg=req.body.Title;
+     if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
+          {
+
+          conn.query('SELECT * FROM Job WHERE Title = ?',  [TitleReg],function(err,rows){
+           if(err){
+                    return console.log(err);
+                 }
+                if (!rows.length)
+                {
+                   conn.query(insertSql,insertValues,function(err, result){
+                     //conn.end();
+                    var deal_id = "Inserted Successfully";
+                    return res.json({"message":deal_id});
+                    });
+                 }
+              else{
+                    return res.json({"message":"Title is already in use"});
+                 }
+        });
+    }
+    else{
+      console.log('File type must be image',err);
+             res.json({message: 'Only image files are allowed.'});
+      }
+
+    }
+    });
+  });
+    });
+    // });
+}
+catch(ex){
+  console.error("Internal error:"+ex);
+  return next(ex);
+  }
+});
+
+//get job
+
+router.get('/job', function(req, res, next) {
+    try {
+      
+      var query = url.parse(req.url,true).query;
+        req.getConnection(function(err, conn) {
+            if (err) {
+                console.error('SQL Connection error: ', err);
+                return next(err);
+            } else {
+              var getquer= "SELECT * from Job";
+                conn.query(getquer, function(err, result) {
+                    if (err) {
+                        console.error('SQL error: ', err);
+                        return next(err);
+                    }
+                    var resEmp = ["jobDetails"];
+                    for (var empIndex in result) {
+                        var empObj = result[empIndex];
+                        resEmp.push(empObj);
+                    }
+                    res.json(resEmp);
+                });
+            }
+        });
+    } catch (ex) {
+        console.error("Internal error:" + ex);
+        return next(ex);
+    }
+});

@@ -17,10 +17,10 @@ database: "react_poc"
 //Create Sql Connection
 
 var connection  = connection(mysql, {
-host: "107.21.183.146",
-user: "tcst",
-password: "tabcaps",
-database: "react_poc"
+host: "localhost",
+user: "root",
+password: "root",
+database: "node"
 },'request');
 app.use(connection);
 
