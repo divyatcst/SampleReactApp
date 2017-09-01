@@ -737,7 +737,7 @@ router.post('/special', function(req, res,next) {
      if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
           {
 
-          conn.query('SELECT * FROM special WHERE Title = ?',  [TitleReg],function(err,rows){
+          conn.query('SELECT * FROM Special WHERE Title = ?',  [TitleReg],function(err,rows){
            if(err){
                     return console.log(err);
                  }
