@@ -8,19 +8,14 @@ var connection = require("express-myconnection");
 var app =express();
 var multipart = require('connect-multiparty');
 
-/*app.use(connection(mysql, {
+
+//Create Sql Connection
+
+var connection  = connection(mysql, {
 host: "107.21.183.146",
 user: "tcst",
 password: "tabcaps",
 database: "react_poc"
-},'request'));*/
-//Create Sql Connection
-
-var connection  = connection(mysql, {
-host: "localhost",
-user: "root",
-password: "root",
-database: "node"
 },'request');
 app.use(connection);
 
