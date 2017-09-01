@@ -21,6 +21,7 @@ app.use(connection);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
+app.use(express.static('/home/ec2-user/www/SampleReactApp'));
 app.set('view engine', 'jade');
 app.use(bodyParser.json());  
 app.use(bodyParser.urlencoded({ extended: true })); // to support encoded bodies
