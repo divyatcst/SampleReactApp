@@ -82,30 +82,38 @@ catch(ex){
 });
 		
 /* Get event Service. */
-router.get('/event', function(req, res, next) {
+router.post('/get_event', function(req, res, next) {
     try {
     	
   		var query = url.parse(req.url,true).query;
   		console.log(query);
-        var eventTitle = query.eventTitle;
-        var  price= query.price;
+       var reqObj = req.body; 
         req.getConnection(function(err, conn) {
             if (err) {
                 console.error('SQL Connection error: ', err);
                 return next(err);
             } else {
-            	var getquer= "SELECT * from Event";
-                conn.query(getquer, function(err, result) {
+            	var EventLocation = reqObj.EventLocation;
+            	var getquer= "SELECT * FROM Event WHERE EventLocation= ?";
+                conn.query(getquer,EventLocation, function(err, result) {
                     if (err) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-                    var resEmp = ["eventDetails"];
+                   if(result.length){
+                   
+                    var resEmp = ["Event Details"];
+
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
                         resEmp.push(empObj);
                     }
+
                     res.json(resEmp);
+                }else{
+                	return res.json({"message":"No Events "});
+                }
+
                 });
             }
         });
@@ -150,7 +158,7 @@ router.post('/delete',function(req, res, next){
 
 });
 
-router.post('/register', function(req,res,next){
+router.post('/userRegister', function(req,res,next){
 try{
 	var reqObj = req.body;        
 	console.log(reqObj);
@@ -165,10 +173,9 @@ try{
 			var insertSql = "INSERT INTO Register SET ?";
 			var insertValues = {
 			"EmailId" : reqObj.EmailId,
-			"Name": reqObj.Name,
+			"UserName": reqObj.UserName,
 			"Password": reqObj.Password,
-			"ConfirmPwd": reqObj.ConfirmPwd,
-			"Login_type" : 0
+			"Login_type" : reqObj.Login_type
 
 			};
 			var emailIdReg = reqObj.EmailId;
@@ -181,10 +188,13 @@ try{
            			conn.query(insertSql, insertValues, function(err, result){
               
               		var event_id = "Registered Successfully";
-					return res.json({"message":event_id});
+					return res.json({
+						"error":200,
+						"message":event_id});
           		 });
        			}else{
-           		return res.json({"message":"EmailId is already in use"});
+           		return res.json({"error":401,
+        	"message":"Either of Email or UserName is already Registered"});
        					}
    				});
 			
@@ -196,39 +206,54 @@ try{
 	return next(ex);
 	}
 });
-router.get('/getUserProfile', function(req, res, next) {
-    try {
-      
-      var query = url.parse(req.url,true).query;
-      console.log(query);
-        var eventTitle = query.eventTitle;
-        var  price= query.price;
-        console.log(eventTitle);
-        console.log(price);
-        req.getConnection(function(err, conn) {
-            if (err) {
-                console.error('SQL Connection error: ', err);
-                return next(err);
-            } else {
-              var getquer= "SELECT * from Register";
-                conn.query(getquer, function(err, result) {
-                    if (err) {
-                        console.error('SQL error: ', err);
-                        return next(err);
-                    }
-                    var resEmp = ["Register Details"];
-                    for (var empIndex in result) {
-                        var empObj = result[empIndex];
-                        resEmp.push(empObj);
-                    }
-                    res.json(resEmp);
-                });
-            }
-        });
-    } catch (ex) {
-        console.error("Internal error:" + ex);
-        return next(ex);
-    }
+router.post('/businessRegister', function(req,res,next){
+try{
+	var reqObj = req.body;        
+	console.log(reqObj);
+	req.getConnection(function(err, conn){
+		if(err){	
+			console.error('SQL Connection error: ', err);
+			return next(err);
+		}
+		else
+		{
+			console.log(insertValues);
+			var insertSql = "INSERT INTO BusinessRegister SET ?";
+			var insertValues = {
+			"Emailid" : reqObj.Emailid,
+			"Name": reqObj.businessName,
+			"Password": reqObj.businessPwd,
+			"businessLink": reqObj.businessLink,
+			"LoginType" : reqObj.LoginType
+
+			};
+			var bEmailid = reqObj.Emailid;
+  			 conn.query('SELECT * FROM BusinessRegister WHERE Emailid = ?',  [bEmailid], function(err,result){
+    		if(err) {
+           		return console.log(err);
+       			}
+       			if (!result.length)
+       			{
+           			conn.query(insertSql, insertValues, function(err, result){
+              
+              		var event_id = "Registered Successfully";
+					return res.json({
+						"error":200,
+						"message":event_id});
+          		 });
+       			}else{
+           		return res.json({"error":401,
+        	"message":"Either of Email or BusinessName is already Registered"});
+       					}
+   				});
+			
+			}
+		});
+	}
+	catch(ex){
+	console.error("Internal error:"+ex);
+	return next(ex);
+	}
 });
 /* when user login with facebook. */
 router.post('/register/facebook', function(req,res,next){
@@ -246,9 +271,8 @@ try{
    var insertSql = "INSERT INTO Register SET ?";
    var insertValues = {
    "EmailId" : reqObj.EmailId,
-   "Name": reqObj.Name,
+   "UserName": reqObj.UserName,
    "Password": reqObj.Password,
-   "ConfirmPwd": reqObj.ConfirmPwd,
    "Login_type" : 1
    
    };
@@ -261,11 +285,14 @@ try{
      {
         conn.query(insertSql, insertValues, function(err, result){
           var event_id = "Registered Successfully";
-          return res.json({"message":event_id});
+          return res.json({
+          	"error":200,
+          	"message":event_id});
         });
       }
       else{
-        return res.json({"message":"EmailId is already in use"});
+        return res.json({"error":401,
+        	"message":"Either of Email or Name is already Registered"});
       }     
     });
   }
@@ -276,6 +303,7 @@ try{
  return next(ex);
  }
 });
+
 //login manually
 router.post('/login', function(req,res,next){
 try{
@@ -290,45 +318,52 @@ try{
 			}
 			else
 			{
-				var EmailId = reqObj.EmailId;
+				var Name = reqObj.Name;
 				var Password = reqObj.Password;
-				var insertSql = "SELECT * from Register where EmailId = ?";
+				var LoginType = reqObj.LoginType;
+				var insertSql = "SELECT * from Register where LoginType = ?";
 
-				var query = conn.query(insertSql, [EmailId], function (err, result)
+				var query = conn.query(insertSql, [LoginType], function (err, result)	
 				{
-					if(err){
-						console.error('SQL error: ', err);
-						return next(err);
-						}
-						else{
-    		 					console.log('The solution is: ', result);
-    							if(result.length >0)
-    							{
+					if(result.length){
+						var resEmp = ["UserInfo"];
 
-     								if(Password == result[0].Password)
-     								{
-     									console.log("jjjjjjpp",result[0].Password);
-        								res.json({
-          								"error":200,
-          								"message":"Sucessfully Authenticated"
-            								});
-     	 							}
-      								else{
-        							res.json({
-          							"error":204,
-          							"message":"Email and password does not match"
-           	 							});
-      								}	
-      							}
-    							else{
-      								res.json({
-        							 "error":204,
-       								 "message":"Email does not exits"
-          								});
-    								}
-    						}
-				});
-			}
+                    for (var empIndex in result) {
+                        var empObj = result[empIndex];
+                        resEmp.push(empObj);
+                    }
+
+                    res.json(resEmp);
+
+					}else{
+						res.json({"error": 401,
+									"message":"Invalid Credentials"});
+					}
+    			});
+    			var Name = reqObj.Name;
+    			var businessPwd = reqObj.businessPwd;
+    			var LoginType = reqObj.LoginType;
+    			var seleSql = "SELECT * from BusinessRegister where LoginType = ?";
+    			var query = conn.query(insertSql, [LoginType], function (err, result)	
+				{
+					if(result.length){
+						var resEmp = ["UserInfo"];
+
+                    for (var empIndex in result) {
+                        var empObj = result[empIndex];
+                        resEmp.push(empObj);
+                    }
+
+                    res.json(resEmp);
+
+					}else{
+						res.json({"error": 401,
+									"message":"Invalid Credentials"});
+					}
+    			});
+
+				}
+
 		});
 	}catch(ex){
 	console.error("Internal error:"+ex);
@@ -456,7 +491,7 @@ router.post('/get_food', function(req, res, next) {
                     }
                    if(result.length){
                    
-                    var resEmp = ["foodDetails"];
+                    var resEmp = ["Food Details"];
 
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
@@ -573,7 +608,7 @@ router.get('/deal', function(req, res, next) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-                    var resEmp = ["dealDetails"];
+                    var resEmp = ["Deal Details"];
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
                         resEmp.push(empObj);
@@ -588,114 +623,6 @@ router.get('/deal', function(req, res, next) {
     }
 });
 
-
-//user register
-router.post('/Registeruser', function(req,res,next){
-try{
-  var reqObj = req.body;        
-  console.log(reqObj);
-  req.getConnection(function(err, conn){
-    if(err){  
-      console.error('SQL Connection error: ', err);
-      return next(err);
-    }
-    else
-    {
-      console.log(insertValues);
-      var insertSql = "INSERT INTO Registeruser SET ?";
-      var insertValues = {
-      "EmailId" : reqObj.EmailId,
-      "Name": reqObj.Name,
-      "Password": reqObj.Password,
-      "ConfirmPwd": reqObj.ConfirmPwd,
-      "Login_type" : 0
-
-      };
-      var emailIdReg = reqObj.EmailId;
-         conn.query('SELECT * FROM Registeruser WHERE EmailId = ?',  [emailIdReg], function(err,result){
-        if(err) {
-              return console.log(err);
-            }
-            if (!result.length)
-            {
-                conn.query(insertSql, insertValues, function(err, result){
-              
-                  var event_id = "Registered Successfully";
-          return res.json({"message":event_id});
-               });
-            }else{
-              return res.json({"message":"EmailId is already in use"});
-                }
-          });
-      
-      }
-    });
-  }
-  catch(ex){
-  console.error("Internal error:"+ex);
-  return next(ex);
-  }
-});
-
-//loginuser
-router.post('/loginuser', function(req,res,next){
-try{
-    var reqObj = req.body;        
-    console.log(reqObj);
-    req.getConnection(function(err, conn)
-    {
-      if(err)
-      { 
-      console.error('SQL Connection error: ', err);
-      return next(err);
-      }
-      else
-      {
-        var EmailId = reqObj.EmailId;
-        var Password = reqObj.Password;
-        var insertSql = "SELECT * from Registeruser where EmailId = ?";
-
-        var query = conn.query(insertSql, [EmailId], function (err, result)
-        {
-          if(err){
-            console.error('SQL error: ', err);
-            return next(err);
-            }
-            else{
-                  console.log('The solution is: ', result);
-                  if(result.length >0)
-                  {
-
-                    if(Password == result[0].Password)
-                    {
-                      console.log("jjjjjjpp",result[0].Password);
-                        res.json({
-                          "error":200,
-                          "message":"Sucessfully Authenticated"
-                            });
-                    }
-                      else{
-                      res.json({
-                        "error":204,
-                        "message":"Email and password does not match"
-                          });
-                      } 
-                    }
-                  else{
-                      res.json({
-                       "error":204,
-                       "message":"Email does not exits"
-                          });
-                    }
-                }
-        });
-      }
-    });
-  }catch(ex){
-  console.error("Internal error:"+ex);
-  return next(ex);
-  }
-});
 
 //special insertion
 
@@ -723,7 +650,7 @@ router.post('/special', function(req, res,next) {
     }else{
     	var actualPath = "http://52.201.14.137:3000/";
     
-      var insertSql = "INSERT INTO special SET ?";
+      var insertSql = "INSERT INTO Special SET ?";
       var insertValues = {
       "Title" : reqObj.Title,
       "Description": reqObj.Description,
@@ -791,7 +718,7 @@ router.get('/special', function(req, res, next) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-                    var resEmp = ["SpecialDetails"];
+                    var resEmp = ["Special Details"];
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
                         resEmp.push(empObj);
@@ -896,7 +823,7 @@ router.get('/job', function(req, res, next) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-                    var resEmp = ["jobDetails"];
+                    var resEmp = ["Job Details"];
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
                         resEmp.push(empObj);
