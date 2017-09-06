@@ -11,11 +11,20 @@ var multipart = require('connect-multiparty');
 
 //Create Sql Connection
 
-var connection  = connection(mysql, {
+/*var connection  = connection(mysql, {
 host: "107.21.183.146",
 user: "tcst",
 password: "tabcaps",
 database: "react_poc"
+},'request');
+app.use(connection);*/
+var connection  = connection(mysql, {
+host: "localhost",
+user: "root",
+password: "root",
+database: "node",
+debug: false,
+multipleStatements: true
 },'request');
 app.use(connection);
 
