@@ -17,8 +17,7 @@ router.post('/event', function(req, res,next) {
 		 var ext = path.extname(req.files.Image.name).toLowerCase();
 		 var temp_path = req.files.Image.path;
 		 console.log("jjjjjj",temp_path);
-		 //ar actualPath = "C:/Users/Prasanthi/Desktop/latest/SampleReactApp";
-		 
+				 
     	// move the file from the temporary location to the intended location
     	
 		fs.readFile(req.files.Image.path, function (err, data) {
@@ -33,7 +32,7 @@ router.post('/event', function(req, res,next) {
 			return next(err);
 		}else{
 			var actualPath = "http://52.201.14.137:3000/";
-			//var actualPath = "C:/Users/Prasanthi/Desktop/latest/SampleReactApp/";;
+			//var actualPath = "C:/Users/Prasanthi/Desktop/latest/SampleReactApp/";
 			var insertSql = "INSERT INTO Event SET ?";
 			var insertValues = {
 			"eventTitle" : reqObj.eventTitle,
@@ -159,28 +158,50 @@ router.post('/delete',function(req, res, next){
 }
 
 });
-
-router.post('/user_register', function(req,res,next){
+//register manually
+router.post('/register', function(req,res,next){
 try{
 	var reqObj = req.body;        
 	console.log(reqObj);
-	req.getConnection(function(err, conn){
+	console.log("kkkkkk",req.files);
+		 var ext = path.extname(req.files.ProfilePhoto.name).toLowerCase();
+		 var temp_path = req.files.ProfilePhoto.path;
+		 console.log("jjjjjj",temp_path);
+				 
+    	// move the file from the temporary location to the intended location
+    	
+		fs.readFile(req.files.ProfilePhoto.path, function (err, data) {
+        var target_path = "uploads/" + req.files.ProfilePhoto.originalFilename;
+        console.log(target_path);
+        /// write file to uploads/fullsize folder
+        fs.writeFile(target_path, data, function (err){
+        	req.getConnection(function(err, conn){
 		if(err){	
 			console.error('SQL Connection error: ', err);
 			return next(err);
 		}
 		else
 		{
+			var actualPath = "C:/Users/Prasanthi/Desktop/latest/SampleReactApp/";
 			console.log(insertValues);
 			var insertSql = "INSERT INTO Register SET ?";
 			var insertValues = {
 			"EmailId" : reqObj.EmailId,
 			"Name": reqObj.Name,
 			"Password": reqObj.Password,
-			"LoginType" : reqObj.LoginType
+			"ConfirmPassword": reqObj.ConfirmPassword,
+			"LoginType" : reqObj.LoginType,
+			"Address": reqObj.Address,
+			"Website": reqObj.Website,
+			"Time": reqObj.Time,
+			"Phone": reqObj.Phone,
+			"ProfilePhoto": actualPath + target_path,
+			"SocialmedialLinks": reqObj.SocialmedialLinks
 
 			};
 			var emailIdReg = reqObj.EmailId;
+			if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
+          	{
   			 conn.query('SELECT * FROM Register WHERE EmailId = ?',  [emailIdReg], function(err,result){
     		if(err) {
            		return console.log(err);
@@ -196,67 +217,72 @@ try{
           		 });
        			}else{
            		return res.json({"error":401,
-        	"message":"Either of Email or UserName is already Registered"});
+        			"message":"Email is already Registered"});
        					}
    				});
+  			 }
+		else{
+			console.log('File type must be image',err);
+             res.json({"message": 'Only image files are allowed.'});
+			}
 			
 			}
 		});
-	}
+	});
+      });
+  }
 	catch(ex){
 	console.error("Internal error:"+ex);
 	return next(ex);
 	}
 });
-router.post('/business_register', function(req,res,next){
-try{
-	var reqObj = req.body;        
-	console.log(reqObj);
-	req.getConnection(function(err, conn){
-		if(err){	
-			console.error('SQL Connection error: ', err);
-			return next(err);
-		}
-		else
-		{
-			console.log(insertValues);
-			var insertSql = "INSERT INTO BusinessRegister SET ?";
-			var insertValues = {
-			"Emailid" : reqObj.Emailid,
-			"Name": reqObj.Name,
-			"Password": reqObj.Password,
-			"businessLink": reqObj.businessLink,
-			"LoginType" : reqObj.LoginType
 
-			};
-			var bEmailid = reqObj.Emailid;
-  			 conn.query('SELECT * FROM BusinessRegister WHERE Emailid = ?',  [bEmailid], function(err,result){
-    		if(err) {
-           		return console.log(err);
-       			}
-       			if (!result.length)
-       			{
-           			conn.query(insertSql, insertValues, function(err, result){
-              
-              		var event_id = "Registered Successfully";
-					return res.json({
-						"error":200,
-						"message":event_id});
-          		 });
-       			}else{
-           		return res.json({"error":401,
-        	"message":"Either of Email or BusinessName is already Registered"});
-       					}
-   				});
-			
-			}
-		});
-	}
-	catch(ex){
-	console.error("Internal error:"+ex);
-	return next(ex);
-	}
+
+//login manually
+router.post('/login', function(req, res, next) {
+    try {
+    	
+  		var reqObj = req.body; 
+        
+        req.getConnection(function(err, conn) {
+            if (err) {
+                console.error('SQL Connection error: ', err);
+                return next(err);
+            } else {
+            
+            	var EmailId = reqObj.EmailId;
+            	var Password=reqObj.Password;
+            	var LoginType= reqObj.LoginType;
+            	var getquery = "SELECT * FROM Register WHERE EmailId='" + EmailId + "' AND Password='" + Password+ "' and LoginType='" + LoginType+ "'";
+                var query = conn.query(getquery, function(err, result) {
+                    if (err) {
+                        console.error('SQL error: ', err);
+                        return next(err);
+                    }
+                   
+                   if(result.length){
+                   console.log("llll",query.sql);
+                
+                    for (var empIndex in result) {
+                        var UserInfo = result[empIndex];
+                      }
+
+                    res.json({"error":200,
+                    	"message":"Authenticated Successfully",UserInfo});
+                }else{
+                	return res.json({"error":401,
+                		"message":"Invalid Credentails"});
+                }  
+        });
+
+    }
+    });
+    } catch (ex) {
+        console.error("Internal error:" + ex);
+        return next(ex);
+    }
 });
+
 
 /* when user login with facebook. */
 router.post('/register/facebook', function(req,res,next){
@@ -307,95 +333,6 @@ try{
  }
 });
 
-//login manually
-router.post('/user_login', function(req, res, next) {
-    try {
-    	
-  		var reqObj = req.body; 
-        
-        req.getConnection(function(err, conn) {
-            if (err) {
-                console.error('SQL Connection error: ', err);
-                return next(err);
-            } else {
-            
-            	var EmailId = reqObj.EmailId;
-            	var Password=reqObj.Password;
-            	var LoginType= reqObj.LoginType;
-            	var getquery = "SELECT * FROM Register WHERE EmailId='" + EmailId + "' AND Password='" + Password+ "' and LoginType='" + LoginType+ "'";
-                var query = conn.query(getquery, function(err, result) {
-                    if (err) {
-                        console.error('SQL error: ', err);
-                        return next(err);
-                    }
-                   
-                   if(result.length){
-                   console.log("llll",query.sql);
-                    var resEmp = ["UserInfo"];
-
-                    for (var empIndex in result) {
-                        var empObj = result[empIndex];
-                        resEmp.push(empObj);
-                    }
-
-                    res.json(resEmp);
-                }else{
-                	return res.json({"error":401,
-                		"message":"Invalid Credentails"});
-                }  
-        });
-
-    }
-    });
-    } catch (ex) {
-        console.error("Internal error:" + ex);
-        return next(ex);
-    }
-});
-router.post('/business_login', function(req, res, next) {
-    try {
-    	
-  		var reqObj = req.body; 
-        
-        req.getConnection(function(err, conn) {
-            if (err) {
-                console.error('SQL Connection error: ', err);
-                return next(err);
-            } else {
-            
-            	var EmailId = reqObj.EmailId;
-            	var Password=reqObj.Password;
-            	var LoginType= reqObj.LoginType;
-            	var getquery = "SELECT * FROM BusinessRegister WHERE EmailId='" + EmailId + "' AND Password='" + Password+ "' and LoginType='" + LoginType+ "'";
-                var query = conn.query(getquery, function(err, result) {
-                    if (err) {
-                        console.error('SQL error: ', err);
-                        return next(err);
-                    }
-                   
-                   if(result.length){
-                   console.log("llll",query.sql);
-                    var resEmp = ["UserInfo"];
-
-                    for (var empIndex in result) {
-                        var empObj = result[empIndex];
-                        resEmp.push(empObj);
-                    }
-
-                    res.json(resEmp);
-                }else{
-                	return res.json({"error":401,
-                		"message":"Invalid Credentails"});
-                }  
-        });
-
-    }
-    });
-    } catch (ex) {
-        console.error("Internal error:" + ex);
-        return next(ex);
-    }
-});
 
 
 //login with fb
