@@ -19,7 +19,6 @@ database: "react_poc"
 },'request');
 app.use(connection);
 
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('/home/ec2-user/www/SampleReactApp'));
