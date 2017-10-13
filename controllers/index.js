@@ -5,87 +5,88 @@ var express = require('express')
  var path = require('path');
  var multiparty = require('multiparty');
  var bcrypt = require('bcrypt');
- var salt = bcrypt.genSaltSync(10);
+ var encryptedString;
 
-
+ var Cryptr = require('cryptr'),
+    cryptr = new Cryptr('password');
+ // Hash the password with the salt
 
 router.use('/users', require('./users'));
 module.exports = router;
 
 //create event service
-router.post('/event', function(req, res,next) {
-	try{
-		var reqObj = req.body;        
-		console.log("rrrrrrrr",reqObj);
-		console.log("kkkkkk",req.files);
-		 var ext = path.extname(req.files.Image.name).toLowerCase();
-		 var temp_path = req.files.Image.path;
-		 console.log("jjjjjj",temp_path);
-				 
-    	// move the file from the temporary location to the intended location
-    	
-		fs.readFile(req.files.Image.path, function (err, data) {
-        var target_path = "uploads/" + req.files.Image.originalFilename;
+router.post('/saveEvent', function(req, res,next) {
+  try{
+    var reqObj = req.body;        
+    console.log("rrrrrrrr",reqObj);
+    console.log("kkkkkk",req.files);
+     var ext = path.extname(req.files.image.name).toLowerCase();
+     var temp_path = req.files.image.path;
+     console.log("jjjjjj",temp_path);
+         
+      // move the file from the temporary location to the intended location
+      
+    fs.readFile(req.files.image.path, function (err, data) {
+        var target_path = "uploads/" + req.files.image.originalFilename;
         console.log(target_path);
         /// write file to uploads/fullsize folder
         fs.writeFile(target_path, data, function (err) {
         
-		req.getConnection(function(err, conn){
-		if(err){	
-			console.error('SQL Connection error: ', err);
-			return next(err);
-		}else{
-			var actualPath = "http://52.201.14.137:3000/";
-	
-			var insertSql = "INSERT INTO Event SET ?";
-			var insertValues = {
-			"eventTitle" : reqObj.eventTitle,
-			"Description": reqObj.Description,
-			"Time": reqObj.Time,
-			"eventLocation": reqObj.eventLocation,
-			"price" : reqObj.price,
-			"Image" : actualPath + target_path
-			
-			};
-		var eventTitleReg=req.body.eventTitle;
-		 if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
+    req.getConnection(function(err, conn){
+    if(err){  
+      console.error('SQL Connection error: ', err);
+      return next(err);
+    }else{
+      var actualPath = "http://52.201.14.137:3000/";
+
+      var insertSql = "INSERT INTO Event SET ?";
+      var insertValues = {
+      "eventTitle" : reqObj.eventTitle,
+      "description": reqObj.description,
+      "time": reqObj.time,
+      "eventLocation": reqObj.eventLocation,
+      "price" : reqObj.price,
+      "image" : actualPath + target_path
+      
+      };
+    var eventTitleReg=req.body.eventTitle;
+     if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
           {
 
-   				conn.query('SELECT * FROM Event WHERE eventTitle = ?',  [eventTitleReg],function(err,rows){
-   				 if(err){
-           					return console.log(err);
-       					 }
-       					if (!rows.length)
-       					{
-          				 conn.query(insertSql,insertValues,function(err, result){
-              		
-               			var event_id = "Inserted Successfully";
-               			return res.json({"error":200,
-               				"message":event_id});
-           					});
-      					 }
-      				else{
-           					return res.json({"error":400,
-           						"message":"eventTitle is already in use"});
-      					 }
-   			});
-		}
-		else{
-			console.log('File type must be image',err);
+          conn.query('SELECT * FROM Event WHERE eventTitle = ?',  [eventTitleReg],function(err,rows){
+           if(err){
+                    return console.log(err);
+                 }
+                if (!rows.length)
+                {
+                   conn.query(insertSql,insertValues,function(err, result){
+                  
+                    var event_id = "Inserted Successfully";
+                    return res.json({"status":200,
+                      "message":event_id});
+                    });
+                 }
+              else{
+                    return res.json({"error":400,
+                      "message":"eventTitle is already in use"});
+                 }
+        });
+    }
+    else{
+      console.log('File type must be image',err);
              res.json({"message": 'Only image files are allowed.'});
-			}
+      }
 
-		}
-		});
-	});
-		});
+    }
+    });
+  });
+    });
 }
 catch(ex){
-	console.error("Internal error:"+ex);
-	return next(ex);
-	}
-});
-		
+  console.error("Internal error:"+ex);
+  return next(ex);
+  }
+});   
 /* Get event Service. */
 router.post('/getEvent', function(req, res, next) {
     try {
@@ -127,47 +128,87 @@ router.post('/getEvent', function(req, res, next) {
         return next(ex);
     }
 });
+router.get('/getAllEvents', function(req, res, next) {
+    try {
+      
+      var query = url.parse(req.url,true).query;
+      console.log(query);
+        var eventTitle = query.eventTitle;
+        var  price= query.price;
+        req.getConnection(function(err, conn) {
+            if (err) {
+                console.error('SQL Connection error: ', err);
+                return next(err);
+            } else {
+              var getquer= "SELECT * from Event";
+                conn.query(getquer, function(err, result) {
+                    if (err) {
+                        console.error('SQL error: ', err);
+                        return next(err);
+                    }
+               if(result.length){
+                    var eventDetails= [];
+                    for (var empIndex in result) {
+                        var empObj = result[empIndex];
+                                              eventDetails.push(empObj);
+                    }
+                    res.json({"status":200,eventDetails});
+              }else{
+                  return res.json({"error":400,"message":"No eventDetails"});
+                }
 
+                });
+            }
+        });
+    } catch (ex) {
+        console.error("Internal error:" + ex);
+        return next(ex);
+    }
+});
 
 //delete event
 router.post('/delete',function(req, res, next){
-	try{
-		var reqObj = req.body;     
-		console.log(reqObj);
-		req.getConnection(function(err, conn){
-			if(err){
-				console.error('SQL Connection error:' ,err);
-				return next(err);
-			}else{
-				var deletequery=" DELETE from Event where ?";
-				var deleteVal = {
-            		"eventTitle" : reqObj.eventTitle
-            	};
-				conn.query(deletequery, deleteVal, function(err, result){
-					if(err){
-						console.error('SQL error:' , err);
-						return next(err);
-					}
+  try{
+    var reqObj = req.body;     
+    console.log(reqObj);
+    req.getConnection(function(err, conn){
+      if(err){
+        console.error('SQL Connection error:' ,err);
+        return next(err);
+      }else{
+        var deletequery=" DELETE from Event where ?";
+        var deleteVal = {
+                "eventTitle" : reqObj.eventTitle
+              };
+        conn.query(deletequery, deleteVal, function(err, result){
+          if(err){
+            console.error('SQL error:' , err);
+            return next(err);
+          }
 
-					console.log(result);
-					var deleteId="Deleted Succesfully";
-					res.json({"message":deleteId});
-				});
-			}
-		});
-	}
-	catch(ex){
-	console.error("Internal error:"+ex);
-	return next(ex);
+          console.log(result);
+          var deleteId="Deleted Succesfully";
+          res.json({"status":200,"message":deleteId});
+        });
+          
+      }
+    });
+  }
+  catch(ex){
+  console.error("Internal error:"+ex);
+  return next(ex);
 }
 
 });
+
 //register manually
 router.post('/register', function(req,res,next){
 try{
   var reqObj = req.body;        
   console.log(reqObj);
-  console.log("kkkkkk",req.files);
+  var encryptedString = cryptr.encrypt(reqObj.password);
+    console.log("sss",encryptedString );
+    console.log("kkkkkk",req.files);
      var ext = path.extname(req.files.profilePhoto.name).toLowerCase();
      var temp_path = req.files.profilePhoto.path;
      console.log("jjjjjj",temp_path);
@@ -186,12 +227,12 @@ try{
     }
     else
     {
+       var actualPath = "http://52.201.14.137:3000/";
       
-      var actualPath = "http://52.201.14.137:3000/";
-      var insertValues = {
+       var insertValues = {
       "emailId" : reqObj.emailId,
       "name": reqObj.name,
-      "password": hash,
+      "password": encryptedString,
       "loginType" : reqObj.loginType,
       "address": reqObj.address,
       "website": reqObj.website,
@@ -228,7 +269,6 @@ try{
              res.json({"error":400,"message": 'Only image files are allowed.'});
       }
       
-
     }
     });
   });
@@ -239,44 +279,43 @@ try{
   }
 });
 
-
-
 //login manually
 router.post('/login', function(req, res, next) {
     try {
-      
-      var reqObj = req.body; 
-        
+          var reqObj = req.body; 
+          var encryptedString = cryptr.encrypt(reqObj.password);
+          var decryptedString = cryptr.decrypt(encryptedString);
+          console.log("sssll",encryptedString);
+          console.log("dddll",decryptedString);
         req.getConnection(function(err, conn) {
             if (err) {
                 console.error('SQL Connection error: ', err);
                 return next(err);
             } else {
-            
               var emailId = reqObj.emailId;
-              var password=reqObj.password;
+              var password= decryptedString;
               var loginType= reqObj.loginType;
-              var getquery = "SELECT * FROM Register WHERE emailId='" + emailId + "' AND password='" + password+ "' and loginType='" + loginType+ "'";
+              var getquery = "SELECT userId,emailId,name,loginType,address,website,time,phone,profilePhoto,socialmediaLinks FROM Register WHERE emailId='" + emailId + "' AND password='" + encryptedString + "' and loginType='" + loginType+ "'";
                 var query = conn.query(getquery, function(err, result) {
                     if (err) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-                   
+                    
                    if(result.length){
                    console.log("llll",query.sql);
                 
                     for (var empIndex in result) {
-
                         var userInfo = result[empIndex];
-                      }
-
+                        }
+                      
                     res.json({"status":200,
                       "message":"Authenticated Successfully",userInfo});
                 }else{
                   return res.json({"error":401,
                     "message":"Invalid Credentails"});
                 }  
+             
         });
 
     }
@@ -286,7 +325,6 @@ router.post('/login', function(req, res, next) {
         return next(ex);
     }
 });
-
 
 /* when user login with facebook. */
 router.post('/register/facebook', function(req,res,next){
@@ -399,7 +437,8 @@ try{
   }
 });
 
-//insert food 
+
+//food item API
 router.post('/food', function(req,res,next){
 try{
  var reqObj = req.body;        
@@ -441,6 +480,7 @@ try{
 });
 
 //Get items
+
 router.post('/getFood', function(req, res, next) {
     try {
       
@@ -485,21 +525,19 @@ router.post('/getFood', function(req, res, next) {
     }
 });
 
-
-//deal insertion
 router.post('/deal', function(req, res,next) {
   try{
     var reqObj = req.body;        
     console.log("rrrrrrrr",reqObj);
     console.log("kkkkkk",req.files);
-    var ext = path.extname(req.files.AddImages.name).toLowerCase();
-     var temp_path = req.files.AddImages.path;
+    var ext = path.extname(req.files.addImages.name).toLowerCase();
+     var temp_path = req.files.addImages.path;
      console.log("jjjjjj",temp_path);
-
+     
       // move the file from the temporary location to the intended location
       
-    fs.readFile(req.files.AddImages.path, function (err, data) {
-        var target_path = "DealUploads/" + req.files.AddImages.originalFilename;
+    fs.readFile(req.files.addImages.path, function (err, data) {
+        var target_path = "DealUploads/" + req.files.addImages.originalFilename;
         console.log(target_path);
         /// write file to uploads/fullsize folder
         fs.writeFile(target_path, data, function (err) {
@@ -509,22 +547,21 @@ router.post('/deal', function(req, res,next) {
       console.error('SQL Connection error: ', err);
       return next(err);
     }else{
-    	var actualPath = "http://52.201.14.137:3000/";
-    
+      var actualPath = "http://52.201.14.137:3000/";
       var insertSql = "INSERT INTO Deal SET ?";
       var insertValues = {
-      "Title" : reqObj.Title,
-      "Description": reqObj.Description,
-      "AddImages":  actualPath + target_path,
-      "Location": reqObj.Location,
-      "AddButton" : reqObj.AddButton
+      "title" : reqObj.title,
+      "description": reqObj.description,
+      "addImages":  actualPath + target_path,
+      "location": reqObj.location,
+      "addButton" : reqObj.addButton,
       
       };
-    var TitleReg=req.body.Title;
+    var TitleReg=req.body.title;
      if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
           {
 
-          conn.query('SELECT * FROM Deal WHERE Title = ?',  [TitleReg],function(err,rows){
+          conn.query('SELECT * FROM Deal WHERE title = ?',  [TitleReg],function(err,rows){
            if(err){
                     return console.log(err);
                  }
@@ -533,17 +570,17 @@ router.post('/deal', function(req, res,next) {
                    conn.query(insertSql,insertValues,function(err, result){
                      //conn.end();
                     var deal_id = "Inserted Successfully";
-                    return res.json({"message":deal_id});
+                    return res.json({"status":200,"message":deal_id});
                     });
                  }
               else{
-                    return res.json({"message":"Title is already in use"});
+                    return res.json({"error":401,"message":"title is already in use"});
                  }
         });
     }
     else{
       console.log('File type must be image',err);
-             res.json({message: 'Only image files are allowed.'});
+             res.json({"error":400,"message": 'Only image files are allowed.'});
       }
 
     }
@@ -565,9 +602,9 @@ router.get('/deal', function(req, res, next) {
       
       var query = url.parse(req.url,true).query;
       console.log(query);
-        var Title = query.Title;
+        var title = query.title;
         //var price= query.price;
-        console.log(Title);
+        console.log(title);
         //console.log(price);
         req.getConnection(function(err, conn) {
             if (err) {
@@ -580,12 +617,18 @@ router.get('/deal', function(req, res, next) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-                    var resEmp = ["Deal Details"];
+          if(result.length){
+                    var dealDetails= [];
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
-                        resEmp.push(empObj);
+                        dealDetails.push(empObj);
                     }
-                    res.json(resEmp);
+                    res.json({"status":200,dealDetails});
+            }else{
+                  return res.json({"error":400,"message":"No dealDetails"});
+               
+
+      }
                 });
             }
         });
@@ -690,14 +733,14 @@ router.get('/special', function(req, res, next) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-    if(result.length){
+               if(result.length){
                     var specialDetails= [];
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
                         specialDetails.push(empObj);
                     }
                     res.json({"status":200,specialDetails});
-    }else{
+              }else{
                   return res.json({"error":400,"message":"No specialDetails"});
                 }
 
@@ -735,7 +778,7 @@ router.post('/job', function(req, res,next) {
       return next(err);
     }else{
       var actualPath = "http://52.201.14.137:3000/";
-    
+      //var actualPath = "C:/Users/TCST09/Desktop/SampleReactApp/";
       var insertSql = "INSERT INTO Job SET ?";
       var insertValues = {
       "title" : reqObj.title,

@@ -18,6 +18,13 @@ password: "tabcaps",
 database: "react_poc"
 },'request');
 app.use(connection);
+/*var connection  = connection(mysql, {
+host: "localhost",
+user: "root",
+password: "root",
+database: "node"
+},'request');
+app.use(connection);*/
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
