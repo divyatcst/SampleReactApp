@@ -2,10 +2,10 @@ var express = require('express')
   , router = express.Router();
  var url = require('url');
  var fs = require('fs');
+
  var path = require('path');
  var multiparty = require('multiparty');
  var bcrypt = require('bcrypt');
- var encryptedString;
 
  var Cryptr = require('cryptr'),
     cryptr = new Cryptr('password');
@@ -17,13 +17,13 @@ module.exports = router;
 //create event service
 router.post('/saveEvent', function(req, res,next) {
   try{
-    var reqObj = req.body;        
-    console.log("rrrrrrrr",reqObj);
-    console.log("kkkkkk",req.files);
-     var ext = path.extname(req.files.image.name).toLowerCase();
-     var temp_path = req.files.image.path;
-     console.log("jjjjjj",temp_path);
-         
+      var reqObj = req.body;        
+      console.log("rrrrrrrr",reqObj);
+      console.log("kkkkkk",req.files);
+      var ext = path.extname(req.files.image.name).toLowerCase();
+      var temp_path = req.files.image.path;
+      console.log("jjjjjj",temp_path);
+        
       // move the file from the temporary location to the intended location
       
     fs.readFile(req.files.image.path, function (err, data) {
@@ -150,7 +150,7 @@ router.get('/getAllEvents', function(req, res, next) {
                     var eventDetails= [];
                     for (var empIndex in result) {
                         var empObj = result[empIndex];
-                                              eventDetails.push(empObj);
+                        eventDetails.push(empObj);
                     }
                     res.json({"status":200,eventDetails});
               }else{
@@ -190,8 +190,7 @@ router.post('/delete',function(req, res, next){
           var deleteId="Deleted Succesfully";
           res.json({"status":200,"message":deleteId});
         });
-          
-      }
+        }
     });
   }
   catch(ex){
@@ -207,28 +206,27 @@ try{
   var reqObj = req.body;        
   console.log(reqObj);
   var encryptedString = cryptr.encrypt(reqObj.password);
-    console.log("sss",encryptedString );
-    console.log("kkkkkk",req.files);
+     console.log("sss",encryptedString );
+     console.log("kkkkkk",req.files);
      var ext = path.extname(req.files.profilePhoto.name).toLowerCase();
      var temp_path = req.files.profilePhoto.path;
      console.log("jjjjjj",temp_path);
          
       // move the file from the temporary location to the intended location
       
-    fs.readFile(req.files.profilePhoto.path, function (err, data) {
-        var target_path = "uploads/" + req.files.profilePhoto.originalFilename;
-        console.log(target_path);
+      fs.readFile(req.files.profilePhoto.path, function (err, data) {
+      var target_path = "uploads/" + req.files.profilePhoto.originalFilename;
+      console.log(target_path);
         /// write file to uploads/fullsize folder
-        fs.writeFile(target_path, data, function (err){
-          req.getConnection(function(err, conn){
-    if(err){  
+      fs.writeFile(target_path, data, function (err){
+      req.getConnection(function(err, conn){
+      if(err){  
       console.error('SQL Connection error: ', err);
       return next(err);
-    }
-    else
-    {
+      }
+      else
+      {
        var actualPath = "http://52.201.14.137:3000/";
-      
        var insertValues = {
       "emailId" : reqObj.emailId,
       "name": reqObj.name,
@@ -241,20 +239,23 @@ try{
       "profilePhoto": actualPath + target_path,
       "socialmediaLinks": reqObj.socialmediaLinks
       };
-      
       var insertSql = "INSERT INTO Register SET ?";
       var emailIdReg = reqObj.emailId;
-      if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
+              if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
             {
-         conn.query('SELECT * FROM Register WHERE emailId = ?',  [emailIdReg], function(err,result){
-        if(err) {
+          var selectQuery= conn.query('SELECT * FROM Register WHERE emailId = ?',  [emailIdReg], function(err,result){
+          if(err) {
                   return console.log(err);
-                }
-                if (!result.length)
-                {
-                conn.query(insertSql, insertValues, function(err, result){
-                var event_id = "Registered Successfully";
-                return res.json({
+                  }
+                  if (!result.length)
+                  {
+                    var query= conn.query(insertSql,insertValues, function(err, result){
+                    if(err){
+                    return console.error("SQL error:"+err);
+                  }
+                  console.log("RegisterQuery",query.sql);
+                  var event_id = "Registered Successfully";
+                  return res.json({
                   "status":200,
                   "message":event_id});
                      });
@@ -270,8 +271,10 @@ try{
       }
       
     }
-    });
+    
+       });
   });
+
   });
   }catch(ex){
   console.error("Internal error:"+ex);
@@ -287,7 +290,7 @@ router.post('/login', function(req, res, next) {
           var decryptedString = cryptr.decrypt(encryptedString);
           console.log("sssll",encryptedString);
           console.log("dddll",decryptedString);
-        req.getConnection(function(err, conn) {
+          req.getConnection(function(err, conn) {
             if (err) {
                 console.error('SQL Connection error: ', err);
                 return next(err);
@@ -301,7 +304,6 @@ router.post('/login', function(req, res, next) {
                         console.error('SQL error: ', err);
                         return next(err);
                     }
-                    
                    if(result.length){
                    console.log("llll",query.sql);
                 
@@ -317,6 +319,44 @@ router.post('/login', function(req, res, next) {
                 }  
              
         });
+  }
+    });
+    } catch (ex) {
+        console.error("Internal error:" + ex);
+        return next(ex);
+    }
+});
+router.post('/getProfile', function(req, res, next) {
+    try {
+          var reqObj = req.body; 
+          req.getConnection(function(err, conn) {
+            if (err) {
+                console.error('SQL Connection error: ', err);
+                return next(err);
+            } else {
+              var emailId = reqObj.emailId;
+              
+              var getquery = "SELECT userId,emailId,name,loginType,address,website,time,phone,profilePhoto,socialmediaLinks FROM Register WHERE emailId='" + emailId + "'";
+                var query = conn.query(getquery, function(err, result) {
+                    if (err) {
+                        console.error('SQL error: ', err);
+                        return next(err);
+                    }
+                   if(result.length){
+                   console.log("llll",query.sql);
+                
+                    for (var empIndex in result) {
+                        var userInfo = result[empIndex];
+                        }
+                      
+                    res.json({"status":200,
+                      "message":"User Profile",userInfo});
+                }else{
+                  return res.json({"error":401,
+                    "message":"Not found such emailId"});
+                }  
+             
+        });
 
     }
     });
@@ -325,6 +365,7 @@ router.post('/login', function(req, res, next) {
         return next(ex);
     }
 });
+
 
 /* when user login with facebook. */
 router.post('/register/facebook', function(req,res,next){
@@ -338,15 +379,15 @@ try{
   }
   else
   {
-   console.log(insertValues);
    var insertSql = "INSERT INTO Register SET ?";
    var insertValues = {
    "emailId" : reqObj.emailId,
    "name": reqObj.name,
    "password": reqObj.password,
-   "login_type" : 1
+   "loginType" : 1
    
    };
+   console.log(insertValues);
    var emailIdReg = reqObj.emailId;
    conn.query('SELECT * FROM Register WHERE emailId = ?',  [emailIdReg], function(err,result){
      if(err){
@@ -391,9 +432,9 @@ try{
       {
         var emailId = reqObj.emailId;
         var password = reqObj.password;
-        var login_type = reqObj.login_type;
+        var loginType = reqObj.loginType;
 
-        var insertSql = "SELECT * from Register where login_type= ?";
+        var insertSql = "SELECT * from Register where loginType= ?";
 
         var query = conn.query(insertSql, [login_type], function (err, result)
         {
@@ -437,7 +478,6 @@ try{
   }
 });
 
-
 //food item API
 router.post('/food', function(req,res,next){
 try{
@@ -449,8 +489,7 @@ try{
    return next(err);
   }
   else
-  {
-   console.log(insertValues);
+  {   
    var insertSql = "INSERT INTO Food SET ?";
    var insertValues = {
    "foodItem" : reqObj.foodItem,
@@ -458,7 +497,8 @@ try{
    "foodCode": reqObj.foodCode,
    "zipcode": reqObj.zipcode
    };
-       conn.query(insertSql, insertValues, function(err, result){
+   console.log(insertValues);
+      conn.query(insertSql, insertValues, function(err, result){
   if(!result.lenghth){
        
           var event_id = "Added Successfully";
@@ -487,19 +527,17 @@ router.post('/getFood', function(req, res, next) {
       var query = url.parse(req.url,true).query;
       //console.log(query);
       var reqObj = req.body; 
-
-        
-        req.getConnection(function(err, conn) {
-            if (err) {
-                console.error('SQL Connection error: ', err);
-                return next(err);
-            } else {
-              var zipcode = reqObj.zipcode;
-              var getquer= "SELECT * FROM Food WHERE zipcode= ?";
-                conn.query(getquer,zipcode, function(err, result) {
-                    if (err) {
-                        console.error('SQL error: ', err);
-                        return next(err);
+      req.getConnection(function(err, conn) {
+      if (err) {
+                  console.error('SQL Connection error: ', err);
+                  return next(err);
+                } else {
+                  var zipcode = reqObj.zipcode;
+                  var getquer= "SELECT * FROM Food WHERE zipcode= ?";
+                  conn.query(getquer,zipcode, function(err, result) {
+                  if (err) {
+                      console.error('SQL error: ', err);
+                      return next(err);
                     }
                    if(result.length){
                    
@@ -765,12 +803,11 @@ router.post('/job', function(req, res,next) {
      console.log("jjjjjj",temp_path);
         
       // move the file from the temporary location to the intended location
-      
     fs.readFile(req.files.addImages.path, function (err, data) {
-        var target_path = "JobUploads/" + req.files.addImages.originalFilename;
-        console.log(target_path);
-        /// write file to uploads/fullsize folder
-        fs.writeFile(target_path, data, function (err) {
+    var target_path = "JobUploads/" + req.files.addImages.originalFilename;
+    console.log(target_path);
+      /// write file to uploads/fullsize folder
+    fs.writeFile(target_path, data, function (err) {
         
     req.getConnection(function(err, conn){
     if(err){  
@@ -786,12 +823,10 @@ router.post('/job', function(req, res,next) {
       "addImages":  actualPath + target_path,
       "location": reqObj.location,
       "addButton" : reqObj.addButton
-      
       };
-    var TitleReg=req.body.title;
-     if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
+      var TitleReg=req.body.title;
+      if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif')
           {
-
           conn.query('SELECT * FROM Job WHERE title = ?',  [TitleReg],function(err,rows){
            if(err){
                     return console.log(err);
@@ -810,6 +845,7 @@ router.post('/job', function(req, res,next) {
         });
     }
     else{
+
       console.log('File type must be image',err);
              res.json({"error":400,"message": 'Only image files are allowed.'});
       }
